@@ -5,55 +5,163 @@ let matches = books
 
 
 /**
- * Renders a list of books in the main UI based on current matches
- * A button is created for each book element that is rendered so an overlay can be opened once it is clicked
- * 'Show More' button is rendered at the bottom of the list of books as well as a number on the remaining books.
- * @function
- * @returns {void} Function does not return a specific value
+ * BookList Web Component
+ *
+ * A custom element that populate the main page with books depending on the matches variable
+ * Update show more button depending on number of books in /data.js file
+ *
+ * Usage:
+ * To use this custom element , these tags should follow
+ *
+ * <book-list></book-list>
+ *
+ * @class BookList
+ * @extends HTMLElement
  */
 
-function renderBooks() {
-    const dataList = document.querySelector('[data-list-items]')
-    dataList.innerHTML = ''
-
-    const items = document.createDocumentFragment()
-
-    for (const { author, id, image, title } of matches.slice(0, page * BOOKS_PER_PAGE)) {
-        const element = document.createElement('button')
-        element.classList = 'preview'
-        element.setAttribute('data-preview', id)
-    
-        element.innerHTML = `
-            <img
-                class="preview__image"
-                src="${image}"
-            />
-            
-            <div class="preview__info">
-                <h3 class="preview__title">${title}</h3>
-                <div class="preview__author">${authors[author]}</div> 
-            </div>
-        `
-    
-        items.appendChild(element)
+class BookList extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' });
+    }
+  
+    connectedCallback() {
+      this.render();
     }
 
-    dataList.appendChild(items)
-    document.querySelector('[data-list-button]').disabled = (matches.length - (page * BOOKS_PER_PAGE)) < 1
 
-    document.querySelector('[data-list-button]').innerHTML = `
-    <span>Show more</span>
-    <span class="list__remaining"> (${(matches.length - (page * BOOKS_PER_PAGE)) > 0 ? (matches.length - (page * BOOKS_PER_PAGE)) : 0})</span>
-`
-    toggleOverlay('search', false)
-}
+    /**
+     * Render method to render books into custom element tag
+     * @method render
+     */
+    render() {
+      const template = document.createElement('template');
+      template.innerHTML = /* html */ `
+        <style>
+          /* Custom styling for elements*/
+        .book-list-container {
+            display: grid;
+            padding: 2rem 1rem;
+            grid-template-columns: repeat(3,1fr);
+            grid-column-gap: 0.5rem;
+            grid-row-gap: 0.5rem;
+            margin: 0 auto;
+            width: 100%;
+          }
+  
+       .preview {
+            border-width: 0;
+            width: 100%;
+            font-family: Roboto, sans-serif;
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            text-align: left;
+            border-radius: 8px;
+            border: 1px solid rgba(var(--color-dark), 0.15);
+            background: rgba(var(--color-light), 1);
+            }
 
+        @media (min-width: 60rem) {
+            .preview {
+                padding: 1rem;
+            }
+            }
 
-// Calling the renderBooks function to display all books in beginning
+        .preview_hidden {
+            display: none;
+            }
 
-renderBooks()
+        .preview:hover {
+            background: rgba(var(--color-blue), 0.05);
+            }
 
-// --- --- --- 
+            .preview__image {
+            width: 48px;
+            height: 70px;
+            object-fit: cover;
+            background: grey;
+            border-radius: 2px;
+            box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+                0px 1px 1px 0px rgba(0, 0, 0, 0.1), 0px 1px 3px 0px rgba(0, 0, 0, 0.1);
+            }
+
+        .preview__info {
+            padding: 1rem;
+            }
+
+        .preview__title {
+            margin: 0 0 0.5rem;
+            font-weight: bold;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;  
+            overflow: hidden;
+            color: rgba(var(--color-dark), 0.8)
+            }
+
+        .preview__author {
+            color: rgba(var(--color-dark), 0.4);
+            }
+
+        </style>
+        <div class="book-list-container"></div>
+      `;
+
+  
+      // Populate the book list as grid items
+      this.shadowRoot.innerHTML = ''
+      const bookListContainer = template.content.querySelector('.book-list-container');
+      bookListContainer.innerHTML = '';
+      
+      for (const { author, id, image, title } of matches.slice(0, page * BOOKS_PER_PAGE)) {
+        const element = document.createElement('button');
+        element.classList.add('preview');
+        element.setAttribute('data-preview', id);
+  
+        element.innerHTML = `
+          <img class="preview__image" src="${image}" alt="Book cover of ${title}" />
+          <div class="preview__info">
+            <h3 class="preview__title">${title}</h3>
+            <div class="preview__author">${authors[author]}</div> 
+          </div>
+        `;
+        
+        bookListContainer.appendChild(element);
+      }
+  
+      this.shadowRoot.appendChild(template.content);
+      this.updateShowMoreButton();
+    }
+  
+    /**
+     * Updates the show more buttton count depending on BOOKS_PER_PAGE and mathces variable
+     * @method updateShowMoreButton
+     */
+    updateShowMoreButton() {
+      const remaining = matches.length - (page * BOOKS_PER_PAGE);
+      const showMoreButton = document.querySelector('[data-list-button]');
+      if (showMoreButton) {
+        showMoreButton.disabled = remaining < 1;
+        showMoreButton.innerHTML = `
+          <span>Show more</span>
+          <span class="list__remaining"> (${remaining > 0 ? remaining : 0})</span>
+        `;
+      }
+      toggleOverlay('search', false);
+    }
+  }
+  
+  /**
+   * 
+   * Definig the custom element to be used in the hmtl document
+   * 
+   */
+  customElements.define('book-list', BookList);
+  
+// --- --- ---
+
 
 
 /**
@@ -232,9 +340,13 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
     // If no books match filter the message will displays
     const dataListMessage = document.querySelector('[data-list-message]')
     dataListMessage.classList.toggle('list__message_show', matches < 1)
+
+    const bookListElement = document.querySelector('book-list');
+    if (bookListElement) {
+        bookListElement.render(); // Calls render to refresh the list
+    }
  
     // Add the result of books to the html
-    renderBooks()
     window.scrollTo({top: 0, behavior: 'smooth'});
 })
 
@@ -246,7 +358,12 @@ document.querySelector('[data-search-form]').addEventListener('submit', (event) 
 
 document.querySelector('[data-list-button]').addEventListener('click', () => {
     page +=1
-    renderBooks()
+
+    const bookListElement = document.querySelector('book-list'); // This assumes the <book-list> element is present
+    if (bookListElement) {
+        bookListElement.render(); // Calls the render method of the BookList component
+    }
+    
 })
 
 // --- ---- ---

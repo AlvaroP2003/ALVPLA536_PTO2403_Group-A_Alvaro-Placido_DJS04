@@ -26,7 +26,7 @@
       rel="stylesheet"
     />
 
-    <script type="module" src="./scripts.js"></script>
+    <script defer type="module" src="./scripts.js"></script>
     <script type="module" src="./data.js"></script>
   </head>
   <body>
@@ -91,7 +91,7 @@
     </header>
 
     <main class="list">
-      <div class="list__items" data-list-items></div>
+      <book-list data-list-items></book-list> <!-- Custom element to render books -->
       <div class="list__message" data-list-message>No results found. Your filters might be too narrow.</div>
       <button class="list__button" data-list-button></button>
     </main>
